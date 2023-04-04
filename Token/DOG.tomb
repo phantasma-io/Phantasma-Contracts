@@ -1,0 +1,67 @@
+token DOG { // this defines the token symbol as DOG
+	import Runtime;
+
+	property name:string = "Dog Token";
+	property symbol: string = "DOG";
+	property isFungible: bool = true; // this is a fungible token (FT), if it was false it would be a non-fungible token (NFT)
+	property isDivisible: bool = true; // this token can be divided into smaller units
+	property decimals:number = 8; // required only if isDivisible is true
+	property isTransferable: bool = true; // this token can be transferred to other addresses
+	property isBurnable: bool = true; // this token can be burned by the owner
+	property isFinite: bool = false; // this token is infinite, if it was true it would be finite
+	//property maxSupply: number = 1000000; // required only if isFinite is true
+	property isCapped: bool = false; // this token is uncapped, if it was true it would be capped
+	global _owner: address;
+	property owner: address = _owner;
+	
+	
+	constructor(owner:address)	{
+       	_owner = owner;
+	}
+
+	// allows the token to be upgraded later, remove this trigger if you want a imutable fungible token
+	trigger onUpgrade(from:address) 
+	{
+		Runtime.expect(Runtime.isWitness(_owner), "witness failed");
+		return;
+	}
+	
+	/// @dev onMint trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onMint(from: address, to: address, symbol: string, amount: number) {
+		Runtime.expect(Runtime.isWitness(_owner), "witness failed"); // Only the owner can mint tokens.
+    }
+
+	/// @dev onBurn trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onBurn(from: address, to: address, symbol: string, amount: number) {
+		Runtime.expect(Runtime.isWitness(from), "witness failed"); // Validating the user that is burning the tokens.
+		Runtime.expect(symbol == $THIS_SYMBOL, "symbol mismatch"); // Validating the symbol.
+    }
+
+    /// @dev onSend trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onSend(from: address, to: address, symbol: string, amount: number) {
+		Runtime.expect(Runtime.isWitness(from), "witness failed"); // Validating the user that is burning the tokens.
+		Runtime.expect(symbol == $THIS_SYMBOL, "symbol mismatch"); // Validating the symbol.
+    }
+
+    /// @dev onReceive trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onReceive(from: address, to: address, symbol: string, amount: number) {
+        // unused
+    }
+	
+}

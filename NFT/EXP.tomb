@@ -1,0 +1,187 @@
+// customRom struct
+struct customRom
+{
+    // Name of the NFT - string
+    name:string;
+    // Description of the NFT - string
+    description:string;
+    // Image of the NFT - IPFS hash - string
+    imageURL:string;
+    // Info URL of the NFT for extended properties - string
+    infoURL:string;
+}
+
+// customRam struct
+struct customRam
+{
+    level:number;
+    xp:number;
+    attack:number;
+}
+
+// custom token contract
+token EXP {
+
+    // global storage for owner address
+    global _owner:address;
+
+    // token name
+    property name:string = "Example NFT";
+    // token is transferable
+    property isTransferable:bool = true;
+    // token is not fungible
+    property isFungible:bool = false;
+    // token is burnable
+    property isBurnable:bool = true;
+    // token has no max supply
+    property maxSupply:number = 0;
+    // token owner address
+    property owner:address = _owner;
+
+    /// customNft struct
+    nft customNft<customRom, customRam> {
+
+        import Token;
+        import Call;
+        import Map;
+
+        property name:string {
+            return _ROM.name;
+        }
+
+        property description:string {
+            return _ROM.description;
+        }
+
+        property imageURL:string {
+            return _ROM.imageURL;
+        }
+
+        property infoURL:string {
+            return _ROM.infoURL;
+        }
+
+        property level:number {
+            return _RAM.level;
+        }
+
+    }
+
+    // librairies import
+    import Runtime;
+    import Token;
+	import Map;
+	import NFT;
+    import Time;
+    import UID;
+    import Market;
+    import Storage;
+    import Bytes;
+    import Call;
+
+    // constructor with owner and all global var
+    constructor(owner:address)
+    {
+        _owner = owner;
+    }
+
+    /// @dev Internal method to infuse NFT with an asset.
+    /// @param creator - Original owner of the NFT - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    /// @param tokenID - NFT ID - number
+    /// @param infusedAsset - NFT infuse asset - string
+    /// @param infusedAmount - NFT infuse amount - number
+    public infuseToken(creator:address, mintTicker:string, tokenID:number, infusedAsset:string, infusedAmount:number)
+    {
+        // local var for infuseAmountDefault
+        local infuseAmountDefault:number =  5 * 10 ^ Token.getDecimals("KCAL");
+
+        // infuse NFT with min value
+        NFT.infuse(creator, mintTicker, tokenID, "KCAL", infuseAmountDefault);
+        
+        // if user wants to infuse
+        if (infusedAmount > 0)
+        {
+            // infuse NFT with user value
+            NFT.infuse(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
+        }
+        
+    }
+
+    /// @dev Internal method to create a new NFT series.
+    /// @param editionId - ID of the NFT series - number
+    /// @param editionMax - Edition Max the NFT series - number
+    /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
+    /// @param creator - Original owner of the NFT - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    public createSeries(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string)
+    {
+        // TokenSeries mode
+        if (editionMode == 2)
+        {
+            // create series unique
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, customNft);
+        }
+        else
+        {
+            // create series duplicated
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, customNft);
+        }
+
+    }
+
+    /// @dev Internal method to start a NFT mint.
+    /// @param isNewSeries - Specify if this is a new series or not - bool
+    /// @param creator - Original owner of the NFT - address
+    /// @param royalties - Commission (in %) for the royalties - number
+    /// @param name - Name of the NFT to mint - string
+    /// @param description - Description of the NFT to mint - string
+    /// @param nftType - Type of the NFT - number
+    /// @param imageURL - Image URL of the NFT - IPFS hash - string
+    /// @param infoURL - Token URL of the NFT - External API - string
+    /// @param attributeType1 - Extended properties of the NFT - string
+    public mint(isNewSeries:bool, creator:address, name:string, description:string, nftType:number, imageURL:string, infoURL:string, editionId:number, editionMax:number, editionMode:number, mintTicker:string, infusedAsset:string, infusedAmount:number)
+    {
+        Runtime.expect(Runtime.isWitness(_owner), "Only the creator can mint NFTs");
+
+        // local var for rom
+        local rom:customRom = Struct.customRom(name, description, imageURL, infoURL);
+        local ram:customRam = Struct.customRam(1, 0, 0);
+        local tokenID:number = 0;
+
+        // if new series pass full rom
+        if (isNewSeries == true || editionMode == 2)
+        {
+            tokenID = NFT.mint(creator, creator, mintTicker, rom, ram, editionId);
+        }
+        // if existing duplicated series
+        else
+        {
+            tokenID = NFT.mint(creator, creator, mintTicker, "", "", editionId);
+        }
+
+        // infuse NFT
+        this.infuseToken(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
+    }
+
+    /// @dev Update the current token contract owner address to another address.
+    /// @param newOwner - Address of the new owner - address
+    public updateOwner(newOwner:address)
+    {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
+
+        // set new owner
+        _owner = newOwner;
+    }
+
+    trigger onMint(from: address, to: address, symbol: string, amount: number) {
+		Runtime.expect(Runtime.isWitness(_owner), "witness failed"); // Validating the user that is burning the tokens.
+		Runtime.expect(symbol == $THIS_SYMBOL, "symbol mismatch"); // Validating the symbol.
+    }
+
+    trigger onBurn(from: address, to: address, symbol: string, amount: number) {
+		Runtime.expect(Runtime.isWitness(from), "witness failed"); // Validating the user that is burning the tokens.
+		Runtime.expect(symbol == $THIS_SYMBOL, "symbol mismatch"); // Validating the symbol.
+    }
+}

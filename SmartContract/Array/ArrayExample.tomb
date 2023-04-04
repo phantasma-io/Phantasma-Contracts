@@ -1,0 +1,8 @@
+contract test {
+	import Array;
+	
+	public getStrings(): array<string> {
+        	local result : array<string> = {"A", "B", "C"};
+        	return result;
+    	}
+}

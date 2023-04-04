@@ -1,0 +1,35 @@
+contract test {
+	import Time;
+	import Task;
+
+	global victory:bool;
+	global deadline:timestamp;
+    global time:timestamp;
+
+
+	public win(from:address)
+	{
+		victory = true;
+	}
+
+    task checkResult()  {
+		if (victory) {
+			break;
+		}
+
+		local now: timestamp = Time.now();
+
+		if (time >= deadline) {
+			break;
+		}
+
+		continue;
+	}
+
+	constructor(owner:address) {
+		victory = false;
+		time = Time.now() + 2;
+		Task.start(checkResult, owner, 0, TaskFrequency.Always, 999);
+	}
+
+}

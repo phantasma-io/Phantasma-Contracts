@@ -1,0 +1,9 @@
+script startup {
+
+	import Call;
+
+	code(target:address) {
+		local temp:number = 50000;
+		Call.contract<none>("Stake", "Unstake", target, temp);
+	}
+}

@@ -1,0 +1,8 @@
+contract test {
+	// this method returns an array of strings (could also be numbers, structs, etc)
+    public getStrings(): string* {
+         return "hello";
+         return "world";
+         return;
+    }
+}
