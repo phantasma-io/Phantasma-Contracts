@@ -27,6 +27,8 @@ token EXP {
 
     // token name
     property name:string = "Example NFT";
+    // token symbol
+    property symbol: string = "EXP";
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
